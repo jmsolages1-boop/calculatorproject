@@ -1,0 +1,145 @@
+// Variables to store calculator state
+let currentInput = '0';      // What's currently shown on display
+let previousInput = '';      // The first number in a calculation
+let operator = '';           // The operation to perform (+, -, ×, ÷)
+let shouldResetDisplay = false; // Flag to know when to start fresh
+
+// Get the display element
+const display = document.getElementById('display');
+
+// Function: Input a number or decimal point
+function inputNumber(num) {
+    // If we just calculated something, start fresh
+    if (shouldResetDisplay) {
+        currentInput = num;
+        shouldResetDisplay = false;
+    } else {
+        // If display shows "0" or "Error", replace it
+        if (currentInput === '0' || currentInput === 'Error') {
+            currentInput = num;
+        } else {
+            // Prevent multiple decimal points
+            if (num === '.' && currentInput.includes('.')) {
+                return; // Do nothing if decimal already exists
+            }
+            // Add the number to the display
+            currentInput += num;
+        }
+    }
+    updateDisplay();
+}
+
+// Function: Input an operator (+, -, ×, ÷)
+function inputOperator(op) {
+    // If we already have an operator and a previous number, calculate first
+    if (operator !== '' && previousInput !== '' && !shouldResetDisplay) {
+        calculate();
+    }
+    
+    // Store the current number and operator
+    previousInput = currentInput;
+    operator = op;
+    shouldResetDisplay = true;
+}
+
+// Function: Perform the calculation
+function calculate() {
+    // Need both numbers and an operator
+    if (previousInput === '' || operator === '') {
+        return; // Do nothing if not ready
+    }
+    
+    // Convert strings to numbers
+    let prev = parseFloat(previousInput);
+    let current = parseFloat(currentInput);
+    let result;
+    
+    // Perform the operation
+    switch (operator) {
+        case '+':
+            result = prev + current;
+            break;
+        case '−':
+            result = prev - current;
+            break;
+        case '×':
+            result = prev * current;
+            break;
+        case '÷':
+            // Prevent division by zero
+            if (current === 0) {
+                currentInput = 'Error';
+                updateDisplay();
+                previousInput = '';
+                operator = '';
+                shouldResetDisplay = true;
+                return;
+            }
+            result = prev / current;
+            break;
+        default:
+            return;
+    }
+    
+    // Round to avoid floating point errors (e.g., 0.1 + 0.2 = 0.30000000004)
+    result = Math.round(result * 100000000) / 100000000;
+    
+    // Update display with result
+    currentInput = result.toString();
+    updateDisplay();
+    
+    // Reset for next calculation
+    previousInput = '';
+    operator = '';
+    shouldResetDisplay = true;
+}
+
+// Function: Clear everything and reset
+function clearCalculator() {
+    currentInput = '0';
+    previousInput = '';
+    operator = '';
+    shouldResetDisplay = false;
+    updateDisplay();
+}
+
+// Function: Update the display element
+function updateDisplay() {
+    display.textContent = currentInput;
+}
+
+// Keyboard support
+document.addEventListener('keydown', function(event) {
+    const key = event.key;
+    
+    // Numbers and decimal
+    if ((key >= '0' && key <= '9') || key === '.') {
+        inputNumber(key);
+    }
+    
+    // Operators
+    if (key === '+') {
+        inputOperator('+');
+    }
+    if (key === '-') {
+        inputOperator('−');
+    }
+    if (key === '*') {
+        inputOperator('×');
+    }
+    if (key === '/') {
+        event.preventDefault(); // Prevent browser's find function
+        inputOperator('÷');
+    }
+    
+    // Equals
+    if (key === 'Enter' || key === '=') {
+        event.preventDefault();
+        calculate();
+    }
+    
+    // Clear
+    if (key === 'Escape' || key.toLowerCase() === 'c') {
+        clearCalculator();
+    }
+});
